@@ -10,9 +10,10 @@ import 'react-native-reanimated';
 import { useColorScheme } from '@/components/useColorScheme';
 import { TamaguiProvider } from 'tamagui';
 import tamaguiConfig from '@/tamagui.config';
-import { Platform } from 'react-native';
+import * as SecureStore from 'expo-secure-store';
 
 import "@/css/global-css-imports";
+import { ClerkLoaded, ClerkProvider, ClerkProviderProps } from '@clerk/clerk-expo';
 
 export {
   // Catch any errors thrown by the Layout component.
@@ -26,6 +27,30 @@ export const unstable_settings = {
 
 // Prevent the splash screen from auto-hiding before asset loading is complete.
 SplashScreen.preventAutoHideAsync();
+
+const tokenCache: ClerkProviderProps['tokenCache'] = {
+  async getToken(key: string) {
+    try {
+      return SecureStore.getItemAsync(key);
+    } catch (err) {
+      return;
+    }
+  },
+  async saveToken(key: string, value: string) {
+    try {
+      SecureStore.setItemAsync(key, value);
+    } catch (err) {
+      return;
+    }
+  },
+  async clearToken(key: string) {
+    try {
+      SecureStore.deleteItemAsync(key)
+    } catch (err) {
+      return;
+    }
+  }
+};
 
 export default function RootLayout() {
   const [loaded, error] = useFonts({
@@ -53,14 +78,22 @@ export default function RootLayout() {
 
 function RootLayoutNav() {
   const colorScheme = useColorScheme() ?? 'light';
+  if (!process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY) throw new Error('Expected a value for `EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY` but received none');
 
   return (
     <TamaguiProvider config={tamaguiConfig} defaultTheme={colorScheme}>
       <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-        <Stack>
-          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-          <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
-        </Stack>
+        <ClerkProvider
+          tokenCache={tokenCache}
+          publishableKey={process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY}
+        >
+          <ClerkLoaded>
+            <Stack>
+              <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+              <Stack.Screen name="modal" options={{ presentation: 'modal' }} />
+            </Stack>
+          </ClerkLoaded>
+        </ClerkProvider>
       </ThemeProvider>
     </TamaguiProvider>
   );
