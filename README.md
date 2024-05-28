@@ -4,6 +4,13 @@ Repro demonstrating a monorepo with pnpm, tamagui, and expo.
 Breaks on adding clerk-expo for authentication.
 [Discord Forum explaining the issue](https://discord.com/channels/695411232856997968/1243659928208408586)
 
+## Problem Statement
+
+When I checkout the `feature/auth` branch and run `pnpm expo ios`,
+I expect a simulator to start, install the compiled binary, and the app starts without problem,
+but the app starts and hits a runtime error
+> Cannot find native module `ExpoCrypto`
+
 ## Setup
 
 Install dependencies
